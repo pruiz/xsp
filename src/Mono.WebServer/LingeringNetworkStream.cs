@@ -33,10 +33,19 @@ namespace Mono.WebServer
 {
 	public class LingeringNetworkStream : NetworkStream 
 	{
-		const int USECONDS_TO_LINGER = 2000000;
-		const int MAX_USECONDS_TO_LINGER = 30000000;
+		static readonly int USECONDS_TO_LINGER = 2000000;
+		static readonly long MAX_USECONDS_TO_LINGER = 30000000;
 		// We dont actually use the data from this buffer. So we cache it...
 		static byte [] buffer;
+
+		static LingeringNetworkStream()
+		{
+			var wait = Environment.GetEnvironmentVariable("XSP_LINGER_WAIT");
+			var maxwait = Environment.GetEnvironmentVariable("XSP_LINGER_WAIT_MAX");
+
+			USECONDS_TO_LINGER = string.IsNullOrWhiteSpace(wait) ? 2000000 : Convert.ToInt32(wait);
+			MAX_USECONDS_TO_LINGER = string.IsNullOrWhiteSpace(maxwait) ? 30000000 : Convert.ToInt64(maxwait);
+		}
 
 		public LingeringNetworkStream (Socket sock, bool owns) : base (sock, owns)
 		{
