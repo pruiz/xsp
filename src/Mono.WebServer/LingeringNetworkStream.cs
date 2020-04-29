@@ -28,6 +28,7 @@
 
 using System;
 using System.Net.Sockets;
+using Mono.WebServer.Log;
 
 namespace Mono.WebServer
 {
@@ -59,7 +60,7 @@ namespace Mono.WebServer
 
 		void LingeringClose ()
 		{
-			int waited = 0;
+			long waited = 0;
 
 			if (!Connected)
 				return;
@@ -70,8 +71,10 @@ namespace Mono.WebServer
 				while (waited < MAX_USECONDS_TO_LINGER) {
 					int nread = 0;
 					try {
-						if (!Socket.Poll (USECONDS_TO_LINGER, SelectMode.SelectRead))
-							break;
+						if (!Socket.Poll (USECONDS_TO_LINGER, SelectMode.SelectRead)) {
+							Logger.Write (LogLevel.Warning, "LongeringClose: TimedOut while polling for socket data.");
+							continue;
+						}
 
 						if (buffer == null)
 							buffer = new byte [512];
@@ -82,7 +85,7 @@ namespace Mono.WebServer
 					if (nread == 0)
 						break;
 
-					waited = (int) (DateTime.UtcNow - start).TotalMilliseconds * 1000;
+					waited = (long) (DateTime.UtcNow - start).TotalMilliseconds * 1000;
 				}
 			} catch {
 				// ignore - we don't care, we're closing anyway
