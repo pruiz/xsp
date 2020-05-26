@@ -72,7 +72,6 @@ namespace Mono.WebServer
 					int nread = 0;
 					try {
 						if (!Socket.Poll (USECONDS_TO_LINGER, SelectMode.SelectRead)) {
-							Logger.Write (LogLevel.Warning, "LongeringClose: TimedOut while polling for socket data.");
 							continue;
 						}
 
@@ -87,8 +86,13 @@ namespace Mono.WebServer
 
 					waited = (long) (DateTime.UtcNow - start).TotalMilliseconds * 1000;
 				}
-			} catch {
-				// ignore - we don't care, we're closing anyway
+
+				if (waited >= MAX_USECONDS_TO_LINGER) {
+					Logger.Write(LogLevel.Warning, "LongeringClose: TimedOut while waiting for socket data from: {0}", Socket?.RemoteEndPoint);
+				}
+			}
+			catch (Exception ex) {
+				Logger.Write(LogLevel.Warning, "LongeringClose: Exception thrown while waiting for socket data from: {0}\n{1}", Socket?.RemoteEndPoint, ex.ToString());
 			}
 		}
 
